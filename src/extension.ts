@@ -283,7 +283,7 @@ export default class HLSLLintingProvider implements vscode.Disposable {
     }
 
     public activate(subscriptions: vscode.Disposable[]): void {
-        
+
         subscriptions.push(vscode.commands.registerCommand('hlsl.linter.setifdefs', this.setIfdefs.bind(this)));
 
         subscriptions.push(this);
@@ -300,7 +300,7 @@ export default class HLSLLintingProvider implements vscode.Disposable {
     }
 
     public setIfdefs(ifdefs: string) {
-        
+
         this.ifdefs = JSON.parse(ifdefs);
 
         vscode.workspace.textDocuments.forEach(this.triggerLint, this);
@@ -425,7 +425,7 @@ export default class HLSLLintingProvider implements vscode.Disposable {
             args.push('-I');
             args.push(path.dirname(textDocument.fileName));
 
-            
+
             this.includeDirs.forEach(includeDir => {
                 args.push("-I");
                 args.push(includeDir);
@@ -475,25 +475,26 @@ export default class HLSLLintingProvider implements vscode.Disposable {
                     cleanup();
                     reject(message);
                 });
-                if (childProcess.pid) {
-                    childProcess.stderr.on('data', (data: Buffer) => {
-                        decoder.write(data);
-                    });
-                    childProcess.stderr.on('end', () => {
-                        let diagnostics: vscode.Diagnostic[] = decoder.getDiagnostics();
-                        if (diagnostics.length) {
-                            this.diagnosticCollection.set(textDocument.uri, diagnostics);
-                        }
-                        else {
-                            this.diagnosticCollection.delete(textDocument.uri);
-                        }
-                        cleanup();
-                        resolve();
-                    });
-                } else {
+                childProcess.stderr.on('data', (data: Buffer) => {
+                    decoder.write(data);
+                });
+                childProcess.stderr.on('end', () => {
+                    let diagnostics: vscode.Diagnostic[] = decoder.getDiagnostics();
+                    if (diagnostics.length) {
+                        this.diagnosticCollection.set(textDocument.uri, diagnostics);
+                    }
+                    else {
+                        this.diagnosticCollection.delete(textDocument.uri);
+                    }
                     cleanup();
-                    reject('failed to start DXC');
-                }
+                    resolve();
+                });
+                childProcess.stdout.on('data', (data: Buffer) => {
+                    // console.log(`stdout: ${data}`);
+                });
+                childProcess.stdout.on('end', () => {
+                    // console.log(`stdout end`);
+                });
             }).bind(this));
         });
     }
@@ -533,7 +534,7 @@ export function activate(context: vscode.ExtensionContext): void {
     //context.subscriptions.push(//this.setIfdefs.bind(this)));
 
     let linter = new HLSLLintingProvider();
-    linter.activate(context.subscriptions);    
+    linter.activate(context.subscriptions);
 }
 
 export function deactivate() { }
